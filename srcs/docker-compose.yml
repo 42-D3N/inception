@@ -1,0 +1,65 @@
+services:
+  mariadb:
+    container_name: mariadb
+    build:
+      context: ./requirements/mariadb
+      dockerfile: Dockerfile
+    pull_policy: never
+    image: mariadb
+    env_file: ./.env
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - inception_network
+    restart: unless-stopped
+
+  wordpress:
+    container_name: wordpress
+    build:
+      context: ./requirements/wordpress
+      dockerfile: Dockerfile
+    pull_policy: never
+    image: wordpress
+    env_file: ./.env
+    depends_on:
+      - mariadb
+    volumes:
+      - wordpress_files:/var/www/html
+    networks:
+      - inception_network
+    restart: unless-stopped
+
+  nginx:
+    container_name: nginx
+    build:
+      context: ./requirements/nginx
+      dockerfile: Dockerfile
+    pull_policy: never
+    image: nginx
+    env_file: ./.env
+    depends_on:
+      - wordpress
+    ports:
+      - "443:443"
+    volumes:
+      - wordpress_files:/var/www/html:ro
+    networks:
+      - inception_network
+    restart: unless-stopped
+
+volumes:
+  mariadb_data:
+    driver_opts:
+      type: none
+      device: /home/tle-pape/data/mariadb
+      o: bind
+  wordpress_files:
+    driver_opts:
+      type: none
+      device: /home/tle-pape/data/wordpress
+      o: bind
+
+networks:
+  inception_network:
+    name: inception_net
+    driver: bridge
